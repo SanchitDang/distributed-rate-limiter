@@ -1,7 +1,9 @@
 // Main.java
 package org.ratelimiter;
 
+import org.ratelimiter.core.RedisTokenBucketRateLimiter;
 import org.ratelimiter.core.TokenBucketRateLimiter;
+import redis.clients.jedis.JedisPool;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -21,8 +23,11 @@ public class Main {
 
     public static void main(String[] args) throws InterruptedException {
 
-        // 10 tokens max, refill 5 tokens/sec
-        TokenBucketRateLimiter limiter = new TokenBucketRateLimiter(10, 5);
+//        Using in memory based TokenLimiter
+//        TokenBucketRateLimiter limiter = new TokenBucketRateLimiter(10, 5);
+
+        JedisPool jedisPool = new JedisPool("localhost", 6379);
+        RedisTokenBucketRateLimiter limiter = new RedisTokenBucketRateLimiter(jedisPool, 10, 5);
 
         ExecutorService executor = Executors.newFixedThreadPool(20);
         String user = "concurrent-user";
@@ -37,5 +42,6 @@ public class Main {
 
         executor.shutdown();
         executor.awaitTermination(5, TimeUnit.SECONDS);
+        jedisPool.close();
     }
 }
