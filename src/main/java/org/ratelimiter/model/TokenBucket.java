@@ -1,5 +1,7 @@
 package org.ratelimiter.model;
 
+import java.util.concurrent.locks.ReentrantLock;
+
 public class TokenBucket {
 
     private final long capacity;
@@ -8,6 +10,8 @@ public class TokenBucket {
     private double tokens;
     private long lastRefillTimestamp;
 
+    private final ReentrantLock lock = new ReentrantLock();
+
     public TokenBucket(long capacity, double refillRatePerSecond) {
         this.capacity = capacity;
         this.refillRatePerMillis = refillRatePerSecond / 1000.0;
@@ -15,19 +19,21 @@ public class TokenBucket {
         this.lastRefillTimestamp = System.currentTimeMillis();
     }
 
-    public long getCapacity() {
-        return capacity;
+    public boolean tryConsume() {
+        lock.lock();
+        try {
+            refill();
+            if (tokens >= 1) {
+                tokens -= 1;
+                return true;
+            }
+            return false;
+        } finally {
+            lock.unlock();
+        }
     }
 
-    public double getTokens() {
-        return tokens;
-    }
-
-    public long getLastRefillTimestamp() {
-        return lastRefillTimestamp;
-    }
-
-    void refill() {
+    private void refill() {
         long now = System.currentTimeMillis();
         long elapsedMillis = now - lastRefillTimestamp;
 
@@ -36,14 +42,5 @@ public class TokenBucket {
             tokens = Math.min(capacity, tokens + tokensToAdd);
             lastRefillTimestamp = now;
         }
-    }
-
-    public boolean tryConsume() {
-        refill();
-        if (tokens >= 1) {
-            tokens -= 1;
-            return true;
-        }
-        return false;
     }
 }

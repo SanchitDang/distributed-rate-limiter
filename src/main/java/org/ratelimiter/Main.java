@@ -2,18 +2,29 @@ package org.ratelimiter;
 
 import org.ratelimiter.core.TokenBucketRateLimiter;
 
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+
 public class Main {
 
     public static void main(String[] args) throws InterruptedException {
+
         TokenBucketRateLimiter limiter =
-                new TokenBucketRateLimiter(5, 1); // 5 tokens, 1/sec
+                new TokenBucketRateLimiter(10, 5); // 10 tokens, 5/sec
 
-        String user = "user-123";
+        ExecutorService executor = Executors.newFixedThreadPool(20);
+        String user = "concurrent-user";
 
-        for (int i = 1; i <= 100; i++) {
-            boolean allowed = limiter.allowRequest(user);
-            System.out.println("Request " + i + ": " + allowed);
-            Thread.sleep(300);
+        for (int i = 0; i < 100; i++) {
+            executor.submit(() -> {
+                boolean allowed = limiter.allowRequest(user);
+                System.out.println(Thread.currentThread().getName()
+                        + " -> " + allowed);
+            });
         }
+
+        executor.shutdown();
+        executor.awaitTermination(5, TimeUnit.SECONDS);
     }
 }
