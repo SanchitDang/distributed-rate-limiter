@@ -1,6 +1,7 @@
 // Main.java
 package org.ratelimiter;
 
+import org.ratelimiter.core.RedisDynamicRateLimiter;
 import org.ratelimiter.core.RedisHierarchicalRateLimiter;
 import org.ratelimiter.core.RedisTokenBucketRateLimiter;
 import org.ratelimiter.core.TokenBucketRateLimiter;
@@ -34,7 +35,25 @@ public class Main {
 //        RedisTokenBucketRateLimiter limiter = new RedisTokenBucketRateLimiter(jedisPool, 10, 5);
 
         /// Using Redis hierarchical TokenLimiter
-        RedisHierarchicalRateLimiter limiter = new RedisHierarchicalRateLimiter(jedisPool, 10, 5);
+//        RedisHierarchicalRateLimiter limiter = new RedisHierarchicalRateLimiter(jedisPool, 10, 5);
+
+        /// Initialize RedisDynamicRateLimiter
+        RedisDynamicRateLimiter limiter = new RedisDynamicRateLimiter(jedisPool);
+
+        /// Set dynamic configs for this (optional)
+        try (var jedis = jedisPool.getResource()) {
+            // User config
+            jedis.hset("rate_limit:user:concurrent-user:config", "capacity", "10");
+            jedis.hset("rate_limit:user:concurrent-user:config", "refill_rate", "5");
+
+            // IP config
+            jedis.hset("rate_limit:ip:192.168.0.1:config", "capacity", "20");
+            jedis.hset("rate_limit:ip:192.168.0.1:config", "refill_rate", "10");
+
+            // Org config
+            jedis.hset("rate_limit:org:orgABC:config", "capacity", "50");
+            jedis.hset("rate_limit:org:orgABC:config", "refill_rate", "15");
+        }
 
         ExecutorService executor = Executors.newFixedThreadPool(20);
         String user = "concurrent-user";
