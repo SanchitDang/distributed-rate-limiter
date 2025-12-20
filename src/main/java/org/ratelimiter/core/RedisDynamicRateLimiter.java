@@ -1,5 +1,6 @@
 package org.ratelimiter.core;
 
+import org.ratelimiter.metrics.RateLimiterMetrics;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 
@@ -13,9 +14,11 @@ public class RedisDynamicRateLimiter implements RateLimiter {
 
     private final JedisPool jedisPool;
     private final String luaScript;
+    private final RateLimiterMetrics metrics;
 
-    public RedisDynamicRateLimiter(JedisPool jedisPool) {
+    public RedisDynamicRateLimiter(JedisPool jedisPool, RateLimiterMetrics metrics) {
         this.jedisPool = jedisPool;
+        this.metrics = metrics;
 
         this.luaScript = """
             local now = tonumber(ARGV[1])
@@ -53,11 +56,23 @@ public class RedisDynamicRateLimiter implements RateLimiter {
     }
 
     public boolean allowRequest(List<String> keys) {
+
+        metrics.incrementTotalRequests();
+        metrics.incrementRedisHit();
+
         try (Jedis jedis = jedisPool.getResource()) {
             long now = System.currentTimeMillis();
 
             Object result = jedis.eval(luaScript, keys, List.of(String.valueOf(now)));
-            return Integer.parseInt(result.toString()) == 1;
+            boolean allowed = Integer.parseInt(result.toString()) == 1;
+
+            if (allowed) {
+                metrics.incrementAllowed();
+            } else {
+                metrics.incrementRejected();
+            }
+
+            return allowed;
         }
     }
 }

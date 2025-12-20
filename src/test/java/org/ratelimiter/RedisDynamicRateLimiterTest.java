@@ -2,6 +2,7 @@ package org.ratelimiter;
 
 import org.junit.jupiter.api.Test;
 import org.ratelimiter.core.RedisDynamicRateLimiter;
+import org.ratelimiter.metrics.InMemoryRateLimiterMetrics;
 import redis.clients.jedis.JedisPool;
 
 import java.util.HashMap;
@@ -27,8 +28,17 @@ public class RedisDynamicRateLimiterTest {
 
     @BeforeAll
     void setup() {
+        InMemoryRateLimiterMetrics metrics = new InMemoryRateLimiterMetrics();
         jedisPool = new JedisPool("localhost", 6379);
-        limiter = new RedisDynamicRateLimiter(jedisPool);
+        limiter = new RedisDynamicRateLimiter(jedisPool, metrics);
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            System.out.println("\n=== RATE LIMITER METRICS ===");
+            System.out.println("Total Requests : " + metrics.total.get());
+            System.out.println("Allowed        : " + metrics.allowed.get());
+            System.out.println("Rejected       : " + metrics.rejected.get());
+            System.out.println("Local Hits     : " + metrics.localHits.get());
+            System.out.println("Redis Hits     : " + metrics.redisHits.get());
+        }));
     }
 
     @AfterAll

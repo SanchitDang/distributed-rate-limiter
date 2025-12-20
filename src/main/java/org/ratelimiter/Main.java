@@ -2,6 +2,7 @@
 package org.ratelimiter;
 
 import org.ratelimiter.core.*;
+import org.ratelimiter.metrics.InMemoryRateLimiterMetrics;
 import redis.clients.jedis.JedisPool;
 
 import java.util.Arrays;
@@ -26,15 +27,31 @@ public class Main {
     // Adding hot-key mitigation to other limiters for increase in performance
     public static void main(String[] args) throws InterruptedException {
 
-        JedisPool jedisPool = new JedisPool("localhost", 6379);
+        // CREATE METRICS (ONLY ONCE)
+        InMemoryRateLimiterMetrics metrics =
+                new InMemoryRateLimiterMetrics();
+
+        // CREATE REDIS CONNECTION
+        JedisPool jedisPool =
+                new JedisPool("localhost", 6379);
 
         // STEP 7: Local hot-key mitigation (fast, in-memory)
         LocalHotKeyRateLimiter hotKeyLimiter =
-                new LocalHotKeyRateLimiter(5, 5); // small local burst
+                new LocalHotKeyRateLimiter(5, 5, metrics); // small local burst
 
         // STEP 6: Distributed + dynamic + hierarchical limiter
         RedisDynamicRateLimiter redisLimiter =
-                new RedisDynamicRateLimiter(jedisPool);
+                new RedisDynamicRateLimiter(jedisPool, metrics);
+
+        // REGISTER SHUTDOWN HOOK (after metrics is created)
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> {
+            System.out.println("\n=== RATE LIMITER METRICS ===");
+            System.out.println("Total Requests : " + metrics.total.get());
+            System.out.println("Allowed        : " + metrics.allowed.get());
+            System.out.println("Rejected       : " + metrics.rejected.get());
+            System.out.println("Local Hits     : " + metrics.localHits.get());
+            System.out.println("Redis Hits     : " + metrics.redisHits.get());
+        }));
 
         // ---- Dynamic configs (can be changed at runtime) ----
         try (var jedis = jedisPool.getResource()) {

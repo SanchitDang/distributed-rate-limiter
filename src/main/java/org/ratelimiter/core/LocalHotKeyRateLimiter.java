@@ -1,5 +1,7 @@
 package org.ratelimiter.core;
 
+import org.ratelimiter.metrics.RateLimiterMetrics;
+
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -18,16 +20,24 @@ public class LocalHotKeyRateLimiter {
     private final ConcurrentHashMap<String, LocalBucket> hotBuckets = new ConcurrentHashMap<>();
     private final long capacity;
     private final double refillRatePerMillis;
+    private final RateLimiterMetrics metrics;
 
-    public LocalHotKeyRateLimiter(long capacity, double refillRatePerSecond) {
+    public LocalHotKeyRateLimiter(long capacity, double refillRatePerSecond, RateLimiterMetrics metrics) {
         this.capacity = capacity;
         this.refillRatePerMillis = refillRatePerSecond / 1000.0;
+        this.metrics = metrics;
     }
 
     public boolean allowRequest(String key) {
         LocalBucket bucket = hotBuckets.computeIfAbsent(key,
                 k -> new LocalBucket(capacity, refillRatePerMillis));
-        return bucket.tryConsume();
+
+        if (bucket.tryConsume()) {
+            metrics.incrementLocalHit();
+            return true;
+        }
+
+        return false;
     }
 
     private static class LocalBucket {
