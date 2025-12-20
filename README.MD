@@ -41,7 +41,7 @@ We want to **control how many requests** a client can make to a system over time
                 └──────┬───────┘
                        │
                 ┌──────▼───────┐
-                │ API Gateway  │  👉 *Future Scope*
+                │ API Gateway  │
                 └──────┬───────┘
                        │
         ┌──────────────▼──────────────┐
@@ -288,7 +288,7 @@ Track:
 * Redis latency 👉 *Future Scope*
 * Key cardinality 👉 *Future Scope*
 
-Expose `/metrics` endpoint. 👉 *Future Scope*
+Expose `/metrics` endpoint. ✅
 
 ---
 
@@ -309,7 +309,7 @@ Expose `/metrics` endpoint. 👉 *Future Scope*
 
 ---
 
-## 15. Build Roadmap (A → Z)
+## 15. Build Roadmap
 
 ### Phase 1 – Core Engine ✅
 
@@ -321,7 +321,7 @@ Expose `/metrics` endpoint. 👉 *Future Scope*
 * Lua scripts
 * Atomic guarantees
 
-### Phase 3 – API Layer 👉 *Future Scope*
+### Phase 3 – API Layer ✅
 
 * REST endpoint
 * Request interceptors
