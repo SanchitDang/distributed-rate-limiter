@@ -18,11 +18,11 @@ We want to **control how many requests** a client can make to a system over time
     * Organization (hierarchical)
 * Support multiple algorithms:
 
-    * Token Bucket
-    * Sliding Window Log
-    * Sliding Window Counter (optimized)
-* Distributed correctness (multiple app instances)
-* Low latency (< 5ms overhead)
+    * Token Bucket ✅ *(Implemented)*
+    * Sliding Window Log 👉 *Future Scope*
+    * Sliding Window Counter (optimized) (optimized) 👉 *Future Scope*
+* Distributed correctness (multiple app instances) (multiple app instances) ✅
+* Low latency (< 5ms overhead) ✅ *(Design validated)*
 
 ### Non‑Functional Requirements
 
@@ -41,7 +41,7 @@ We want to **control how many requests** a client can make to a system over time
                 └──────┬───────┘
                        │
                 ┌──────▼───────┐
-                │ API Gateway  │  (Optional)
+                │ API Gateway  │  👉 *Future Scope*
                 └──────┬───────┘
                        │
         ┌──────────────▼──────────────┐
@@ -80,7 +80,7 @@ rate_limit:org:acme_corp
 
 ## 4. Algorithms (DSA‑Heavy Core)
 
-### 4.1 Token Bucket (Primary Algorithm)
+### 4.1 Token Bucket (Primary Algorithm) ✅ *(Implemented)*
 
 **Idea**: Tokens refill at a fixed rate. Each request consumes 1 token.
 
@@ -109,7 +109,7 @@ rate_limit:org:acme_corp
 
 ---
 
-### 4.2 Sliding Window Log (Accurate, Expensive)
+### 4.2 Sliding Window Log (Accurate, Expensive) 👉 *Future Scope*
 
 Store **timestamps of requests**.
 
@@ -132,7 +132,7 @@ DSA:
 
 ---
 
-### 4.3 Sliding Window Counter (Optimized)
+### 4.3 Sliding Window Counter (Optimized) 👉 *Future Scope*
 
 Split time into fixed buckets.
 
@@ -147,7 +147,7 @@ DSA:
 
 ---
 
-## 5. Redis Atomicity (CRITICAL)
+## 5. Redis Atomicity (CRITICAL) ✅ *(Implemented)*
 
 ### Why Atomic Operations Matter
 
@@ -173,21 +173,21 @@ All in **one atomic operation**.
 ```
 RateLimiterService
  ├── RateLimiterEngine
- │     ├── TokenBucketLimiter
- │     ├── SlidingWindowLimiter
+ │     ├── TokenBucketLimiter ✅
+ │     ├── SlidingWindowLimiter 👉 *Future Scope*
  │
- ├── PolicyResolver
+ ├── PolicyResolver 👉 *Future Scope*
  │     ├── UserPolicy
  │     ├── OrgPolicy
  │
- ├── RedisClient
+ ├── RedisClient ✅
  │
- ├── MetricsCollector
+ ├── MetricsCollector ✅
 ```
 
 ---
 
-## 7. Concurrency Handling (In‑Process)
+## 7. Concurrency Handling (In‑Process) ✅ *(Implemented)*
 
 ### Problem
 
@@ -215,7 +215,7 @@ Client Request
    ↓
 Extract identity (IP / User / Org)
    ↓
-Resolve policy (limits, algorithm)
+Resolve policy (limits, algorithm) 👉 *Future Scope*
    ↓
 Execute Redis Lua script
    ↓
@@ -224,7 +224,7 @@ Allowed ? Forward : Reject (429)
 
 ---
 
-## 9. Hierarchical Rate Limiting (Advanced)
+## 9. Hierarchical Rate Limiting (Advanced) ✅ *(Implemented)*
 
 Request must pass **ALL levels**:
 
@@ -242,7 +242,7 @@ Fail fast on first violation.
 
 ---
 
-## 10. Hot Key Mitigation
+## 10. Hot Key Mitigation ✅ *(Implemented)*
 
 ### Problem
 
@@ -250,13 +250,13 @@ One key gets massive traffic.
 
 ### Solutions
 
-* Key sharding
-* Local in‑memory pre‑check
-* Request coalescing
+* Key sharding 👉 *Future Scope*
+* Local in‑memory pre‑check ✅
+* Request coalescing 👉 *Future Scope*
 
 ---
 
-## 11. Dynamic Configuration
+## 11. Dynamic Configuration ✅ *(Implemented)*
 
 ### Requirement
 
@@ -276,8 +276,8 @@ Change limits without redeploying.
 
 Options:
 
-* Fail open (allow traffic)
-* Fail closed (block traffic)
+* Fail open (allow traffic) 👉 *Configurable – Future Enhancement*
+* Fail closed (block traffic) ✅ *(Default behavior)*
 
 Explain CAP trade‑off clearly in interviews.
 
@@ -287,11 +287,11 @@ Explain CAP trade‑off clearly in interviews.
 
 Track:
 
-* Allowed vs blocked requests
-* Redis latency
-* Key cardinality
+* Allowed vs blocked requests ✅
+* Redis latency 👉 *Future Scope*
+* Key cardinality 👉 *Future Scope*
 
-Expose `/metrics` endpoint.
+Expose `/metrics` endpoint. 👉 *Future Scope*
 
 ---
 
@@ -299,41 +299,41 @@ Expose `/metrics` endpoint.
 
 ### Unit Tests
 
-* Token refill logic
-* Window calculations
+* Token refill logic ✅
+* Window calculations 👉 *Future Scope*
 
 ### Concurrency Tests
 
-* Multi‑threaded request simulation
+* Multi‑threaded request simulation ✅
 
 ### Load Tests
 
-* Burst traffic
+* Burst traffic 👉 *Future Scope*
 
 ---
 
 ## 15. Build Roadmap (A → Z)
 
-### Phase 1 – Core Engine
+### Phase 1 – Core Engine ✅
 
 * Implement Token Bucket in Java
 * Unit test thoroughly
 
-### Phase 2 – Redis Integration
+### Phase 2 – Redis Integration ✅
 
 * Lua scripts
 * Atomic guarantees
 
-### Phase 3 – API Layer
+### Phase 3 – API Layer 👉 *Future Scope*
 
 * REST endpoint
 * Request interceptors
 
-### Phase 4 – Distributed Concerns
+### Phase 4 – Distributed Concerns ✅
 
 * Multi‑instance testing
 
-### Phase 5 – Advanced Features
+### Phase 5 – Advanced Features ✅
 
 * Hierarchy
 * Dynamic config
