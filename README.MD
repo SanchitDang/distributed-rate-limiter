@@ -174,13 +174,12 @@ All in **one atomic operation**.
 RateLimiterService
  ├── RateLimiterEngine
  │     ├── TokenBucketLimiter ✅
+ │     ├── RedisBucketLimiter ✅
  │     ├── SlidingWindowLimiter 👉 *Future Scope*
  │
  ├── PolicyResolver 👉 *Future Scope*
  │     ├── UserPolicy
  │     ├── OrgPolicy
- │
- ├── RedisClient ✅
  │
  ├── MetricsCollector ✅
 ```
@@ -279,8 +278,6 @@ Options:
 * Fail open (allow traffic) 👉 *Configurable – Future Enhancement*
 * Fail closed (block traffic) ✅ *(Default behavior)*
 
-Explain CAP trade‑off clearly in interviews.
-
 ---
 
 ## 13. Metrics & Observability
@@ -308,7 +305,7 @@ Expose `/metrics` endpoint. 👉 *Future Scope*
 
 ### Load Tests
 
-* Burst traffic 👉 *Future Scope*
+* Burst traffic ✅
 
 ---
 
