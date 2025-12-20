@@ -58,7 +58,6 @@ public class RedisDynamicRateLimiter implements RateLimiter {
     public boolean allowRequest(List<String> keys) {
 
         metrics.incrementTotalRequests();
-        metrics.incrementRedisHit();
 
         try (Jedis jedis = jedisPool.getResource()) {
             long now = System.currentTimeMillis();
@@ -67,6 +66,7 @@ public class RedisDynamicRateLimiter implements RateLimiter {
             boolean allowed = Integer.parseInt(result.toString()) == 1;
 
             if (allowed) {
+                metrics.incrementRedisHit();
                 metrics.incrementAllowed();
             } else {
                 metrics.incrementRejected();

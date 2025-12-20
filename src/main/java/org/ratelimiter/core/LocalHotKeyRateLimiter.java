@@ -29,14 +29,18 @@ public class LocalHotKeyRateLimiter {
     }
 
     public boolean allowRequest(String key) {
+        metrics.incrementTotalRequests();
+
         LocalBucket bucket = hotBuckets.computeIfAbsent(key,
                 k -> new LocalBucket(capacity, refillRatePerMillis));
 
         if (bucket.tryConsume()) {
             metrics.incrementLocalHit();
+            metrics.incrementAllowed();
             return true;
         }
 
+        metrics.incrementRejected();
         return false;
     }
 
