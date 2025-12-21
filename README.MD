@@ -177,9 +177,10 @@ RateLimiterService
  │     ├── RedisBucketLimiter ✅
  │     ├── SlidingWindowLimiter 👉 *Future Scope*
  │
- ├── PolicyResolver 👉 *Future Scope*
+ ├── PolicyResolver ✅
  │     ├── UserPolicy
  │     ├── OrgPolicy
+ │     ├── IpPolicy
  │
  ├── MetricsCollector ✅
 ```
@@ -207,14 +208,14 @@ Use:
 
 ---
 
-## 8. Request Flow (Step‑by‑Step)
+## 8. Request Flow (Step‑by‑Step) ✅ *(Implemented)*
 
 ```
 Client Request
    ↓
 Extract identity (IP / User / Org)
    ↓
-Resolve policy (limits, algorithm) 👉 *Future Scope*
+Resolve policy (limits, algorithm)
    ↓
 Execute Redis Lua script
    ↓
