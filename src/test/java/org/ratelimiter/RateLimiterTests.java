@@ -123,7 +123,7 @@ public class RateLimiterTests {
          * - Very high QPS	16+
          */
         LocalHotKeyRateLimiter hotKeyLimiter = new LocalHotKeyRateLimiter(5, 1, 4, metrics);
-        RedisDynamicRateLimiter redisLimiter = new RedisDynamicRateLimiter(jedisPool, metrics);
+        RedisDynamicRateLimiter redisLimiter = new RedisDynamicRateLimiter(jedisPool, metrics, RedisFailMode.FAIL_CLOSED);
 
         String user = "concurrent-user";
         String ip = "192.168.0.1";

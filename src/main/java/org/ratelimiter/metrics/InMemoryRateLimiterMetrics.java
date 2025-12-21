@@ -18,6 +18,8 @@ public class InMemoryRateLimiterMetrics implements RateLimiterMetrics {
     public final AtomicLong localHits = new AtomicLong();
     public final AtomicLong redisHits = new AtomicLong();
 
+    public final AtomicLong redisFailure = new AtomicLong();
+
     private final Set<String> uniqueKeys = ConcurrentHashMap.newKeySet();
     private final AtomicLong totalRedisLatencyMs = new AtomicLong();
     private final AtomicLong redisCalls = new AtomicLong();
@@ -42,6 +44,9 @@ public class InMemoryRateLimiterMetrics implements RateLimiterMetrics {
 
     @Override
     public void incrementLocalHit() { localHits.incrementAndGet(); }
+
+    @Override
+    public void incrementRedisFailure() { redisFailure.incrementAndGet(); }
 
     @Override
     public void incrementRedisHit() { redisHits.incrementAndGet(); }

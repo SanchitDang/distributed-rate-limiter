@@ -2,6 +2,7 @@ package org.ratelimiter;
 
 import org.junit.jupiter.api.*;
 import org.ratelimiter.core.RedisDynamicRateLimiter;
+import org.ratelimiter.core.RedisFailMode;
 import org.ratelimiter.metrics.InMemoryRateLimiterMetrics;
 import org.ratelimiter.policy.ResolvePolicy;
 import org.ratelimiter.policy.DefaultPolicyResolver;
@@ -24,7 +25,7 @@ public class ConcurrentRateLimiterTest {
     public void setup() {
         jedisPool = new JedisPool("localhost", 6379);
         metrics = new InMemoryRateLimiterMetrics();
-        rateLimiter = new RedisDynamicRateLimiter(jedisPool, metrics);
+        rateLimiter = new RedisDynamicRateLimiter(jedisPool, metrics, RedisFailMode.FAIL_CLOSED);
         policyResolver = new DefaultPolicyResolver();
 
         // Preload configs

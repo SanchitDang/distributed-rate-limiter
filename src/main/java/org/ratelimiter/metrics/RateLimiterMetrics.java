@@ -15,6 +15,8 @@ public interface RateLimiterMetrics {
     void incrementLocalHit();
     void incrementRedisHit();
 
+    void incrementRedisFailure();
+
     void recordKeys(List<String> keys);
     void recordRedisLatency(long latencyMs);
 

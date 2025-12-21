@@ -2,6 +2,7 @@ package org.ratelimiter;
 
 import org.junit.jupiter.api.*;
 import org.ratelimiter.core.RedisDynamicRateLimiter;
+import org.ratelimiter.core.RedisFailMode;
 import org.ratelimiter.metrics.InMemoryRateLimiterMetrics;
 import org.ratelimiter.policy.ResolvePolicy;
 import org.ratelimiter.policy.DefaultPolicyResolver;
@@ -27,7 +28,7 @@ public class HierarchicalRateLimiterTest {
         InMemoryRateLimiterMetrics metrics = new InMemoryRateLimiterMetrics();
 
         // Redis Dynamic Rate Limiter
-        rateLimiter = new RedisDynamicRateLimiter(jedisPool, metrics);
+        rateLimiter = new RedisDynamicRateLimiter(jedisPool, metrics, RedisFailMode.FAIL_CLOSED);
 
         // Policy Resolver
         policyResolver = new DefaultPolicyResolver();

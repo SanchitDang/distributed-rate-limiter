@@ -9,16 +9,26 @@ import java.util.List;
 /**
  * Dynamic hierarchical token bucket
  * Step 6: Capacity and refill rate are fetched dynamically from Redis
+ *
+ * Failure Handling:
+ * - FAIL_OPEN   → allow traffic if Redis is unavailable
+ * - FAIL_CLOSED → block traffic if Redis is unavailable
  */
 public class RedisDynamicRateLimiter implements RateLimiter {
 
     private final JedisPool jedisPool;
     private final String luaScript;
     private final RateLimiterMetrics metrics;
+    private final RedisFailMode failMode;
 
-    public RedisDynamicRateLimiter(JedisPool jedisPool, RateLimiterMetrics metrics) {
+    public RedisDynamicRateLimiter(
+            JedisPool jedisPool,
+            RateLimiterMetrics metrics,
+            RedisFailMode failMode
+    ) {
         this.jedisPool = jedisPool;
         this.metrics = metrics;
+        this.failMode = failMode;
 
         this.luaScript = """
             local now = tonumber(ARGV[1])
@@ -61,13 +71,14 @@ public class RedisDynamicRateLimiter implements RateLimiter {
         metrics.recordKeys(keys);
 
         try (Jedis jedis = jedisPool.getResource()) {
+
             long now = System.currentTimeMillis();
-
             long start = System.nanoTime();
-            Object result = jedis.eval(luaScript, keys, List.of(String.valueOf(now)));
-            long end = System.nanoTime();
 
-            metrics.recordRedisLatency((end - start) / 1_000_000); // latency in ms
+            Object result = jedis.eval(luaScript, keys, List.of(String.valueOf(now)));
+
+            long end = System.nanoTime();
+            metrics.recordRedisLatency((end - start) / 1_000_000);
 
             boolean allowed = Integer.parseInt(result.toString()) == 1;
 
@@ -79,6 +90,18 @@ public class RedisDynamicRateLimiter implements RateLimiter {
             }
 
             return allowed;
+
+        } catch (Exception e) {
+            // Redis failure handling
+            metrics.incrementRedisFailure();
+
+            if (failMode == RedisFailMode.FAIL_OPEN) {
+                metrics.incrementAllowed();
+                return true;
+            }
+
+            metrics.incrementRejected();
+            return false;
         }
     }
 }

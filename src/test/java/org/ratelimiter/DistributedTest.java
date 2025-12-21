@@ -1,6 +1,7 @@
 package org.ratelimiter;
 
 import org.ratelimiter.core.RedisDynamicRateLimiter;
+import org.ratelimiter.core.RedisFailMode;
 import org.ratelimiter.metrics.InMemoryRateLimiterMetrics;
 import redis.clients.jedis.JedisPool;
 
@@ -15,7 +16,7 @@ public class DistributedTest {
                 new InMemoryRateLimiterMetrics();
 
         JedisPool jedisPool = new JedisPool("localhost", 6379);
-        RedisDynamicRateLimiter limiter = new RedisDynamicRateLimiter(jedisPool, metrics);
+        RedisDynamicRateLimiter limiter = new RedisDynamicRateLimiter(jedisPool, metrics, RedisFailMode.FAIL_CLOSED);
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             System.out.println("\n=== RATE LIMITER METRICS ===");

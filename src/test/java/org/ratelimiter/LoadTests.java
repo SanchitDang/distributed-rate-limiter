@@ -2,6 +2,7 @@ package org.ratelimiter;
 
 import org.junit.jupiter.api.*;
 import org.ratelimiter.core.RedisDynamicRateLimiter;
+import org.ratelimiter.core.RedisFailMode;
 import org.ratelimiter.metrics.InMemoryRateLimiterMetrics;
 import redis.clients.jedis.JedisPool;
 
@@ -22,7 +23,7 @@ public class LoadTests {
     void setup() {
         metrics = new InMemoryRateLimiterMetrics();
         jedisPool = new JedisPool("localhost", 6379);
-        limiter = new RedisDynamicRateLimiter(jedisPool, metrics);
+        limiter = new RedisDynamicRateLimiter(jedisPool, metrics, RedisFailMode.FAIL_CLOSED);
 
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             System.out.println("\n=== RATE LIMITER METRICS ===");

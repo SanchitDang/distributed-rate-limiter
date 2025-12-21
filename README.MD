@@ -273,7 +273,7 @@ Change limits without redeploying.
 
 Options:
 
-* Fail open (allow traffic) 👉 *Configurable – Future Enhancement*
+* Fail open (allow traffic)
 * Fail closed (block traffic)
 
 ---

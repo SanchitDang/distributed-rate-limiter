@@ -1,6 +1,7 @@
 package org.ratelimiter.api.config;
 
 import org.ratelimiter.core.RedisDynamicRateLimiter;
+import org.ratelimiter.core.RedisFailMode;
 import org.ratelimiter.metrics.InMemoryRateLimiterMetrics;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,12 +22,21 @@ public class RateLimiterConfig {
         return new JedisPool(poolConfig, "localhost", 6379, 2000);
     }
 
+    /**
+     * Configurable Redis failure behavior.
+     * Future enhancement: read from application.yml / env variable
+     */
+    @Bean
+    public RedisFailMode redisFailMode() {
+        return RedisFailMode.FAIL_OPEN; // default safe mode
+    }
 
     @Bean
     public RedisDynamicRateLimiter redisDynamicRateLimiter(
             JedisPool jedisPool,
-            InMemoryRateLimiterMetrics metrics
+            InMemoryRateLimiterMetrics metrics,
+            RedisFailMode redisFailMode
     ) {
-        return new RedisDynamicRateLimiter(jedisPool, metrics);
+        return new RedisDynamicRateLimiter(jedisPool, metrics, redisFailMode);
     }
 }
