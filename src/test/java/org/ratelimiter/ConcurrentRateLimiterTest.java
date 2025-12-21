@@ -1,4 +1,4 @@
-package org.ratelimiter.api.simulation;
+package org.ratelimiter;
 
 import org.junit.jupiter.api.*;
 import org.ratelimiter.core.RedisDynamicRateLimiter;

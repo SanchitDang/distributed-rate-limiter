@@ -11,18 +11,15 @@ We want to **control how many requests** a client can make to a system over time
 ### Functional Requirements
 
 * Limit requests by:
-
     * IP
     * User ID
-    * API Key
-    * Organization (hierarchical)
+    * Organization
 * Support multiple algorithms:
-
-    * Token Bucket ✅ *(Implemented)*
-    * Sliding Window Log 👉 *Future Scope*
+    * Token Bucket
+    * Sliding Window Log (optimized) 👉 *Future Scope*
     * Sliding Window Counter (optimized) (optimized) 👉 *Future Scope*
-* Distributed correctness (multiple app instances) (multiple app instances) ✅
-* Low latency (< 5ms overhead) ✅ *(Design validated)*
+* Distributed correctness (multiple app instances) (multiple app instances)
+* Low latency (< 5ms overhead)
 
 ### Non‑Functional Requirements
 
@@ -80,7 +77,7 @@ rate_limit:org:acme_corp
 
 ## 4. Algorithms (DSA‑Heavy Core)
 
-### 4.1 Token Bucket (Primary Algorithm) ✅ *(Implemented)*
+### 4.1 Token Bucket (Primary Algorithm)
 
 **Idea**: Tokens refill at a fixed rate. Each request consumes 1 token.
 
@@ -147,7 +144,7 @@ DSA:
 
 ---
 
-## 5. Redis Atomicity (CRITICAL) ✅ *(Implemented)*
+## 5. Redis Atomicity (CRITICAL)
 
 ### Why Atomic Operations Matter
 
@@ -173,21 +170,21 @@ All in **one atomic operation**.
 ```
 RateLimiterService
  ├── RateLimiterEngine
- │     ├── TokenBucketLimiter ✅
- │     ├── RedisBucketLimiter ✅
+ │     ├── TokenBucketLimiter
+ │     ├── RedisBucketLimiter
  │     ├── SlidingWindowLimiter 👉 *Future Scope*
  │
- ├── PolicyResolver ✅
+ ├── PolicyResolver
  │     ├── UserPolicy
  │     ├── OrgPolicy
  │     ├── IpPolicy
  │
- ├── MetricsCollector ✅
+ ├── MetricsCollector
 ```
 
 ---
 
-## 7. Concurrency Handling (In‑Process) ✅ *(Implemented)*
+## 7. Concurrency Handling (In‑Process)
 
 ### Problem
 
@@ -208,7 +205,7 @@ Use:
 
 ---
 
-## 8. Request Flow (Step‑by‑Step) ✅ *(Implemented)*
+## 8. Request Flow (Step‑by‑Step)
 
 ```
 Client Request
@@ -224,7 +221,7 @@ Allowed ? Forward : Reject (429)
 
 ---
 
-## 9. Hierarchical Rate Limiting (Advanced) ✅ *(Implemented)*
+## 9. Hierarchical Rate Limiting (Advanced)
 
 Request must pass **ALL levels**:
 
@@ -242,7 +239,7 @@ Fail fast on first violation.
 
 ---
 
-## 10. Hot Key Mitigation ✅ *(Implemented)*
+## 10. Hot Key Mitigation
 
 ### Problem
 
@@ -251,12 +248,12 @@ One key gets massive traffic.
 ### Solutions
 
 * Key sharding 👉 *Future Scope*
-* Local in‑memory pre‑check ✅
+* Local in‑memory pre‑check
 * Request coalescing 👉 *Future Scope*
 
 ---
 
-## 11. Dynamic Configuration ✅ *(Implemented)*
+## 11. Dynamic Configuration
 
 ### Requirement
 
@@ -277,7 +274,7 @@ Change limits without redeploying.
 Options:
 
 * Fail open (allow traffic) 👉 *Configurable – Future Enhancement*
-* Fail closed (block traffic) ✅ *(Default behavior)*
+* Fail closed (block traffic)
 
 ---
 
@@ -285,11 +282,11 @@ Options:
 
 Track:
 
-* Allowed vs blocked requests ✅
-* Redis latency 👉 *Future Scope*
-* Key cardinality 👉 *Future Scope*
+* Allowed vs blocked requests
+* Redis latency
+* Key cardinality
 
-Expose `/metrics` endpoint. ✅
+Expose `/metrics` endpoint.
 
 ---
 
@@ -297,41 +294,43 @@ Expose `/metrics` endpoint. ✅
 
 ### Unit Tests
 
-* Token refill logic ✅
-* Window calculations 👉 *Future Scope*
+* Token refill logic
+* Individual policy tests (user, IP, org)
 
 ### Concurrency Tests
 
-* Multi‑threaded request simulation ✅
+* Multi‑threaded request simulation
+* Hierarchical policy tests (combined user + IP + org
 
 ### Load Tests
 
-* Burst traffic ✅
+* Burst traffic
+* API-level integration tests (simulating HTTP requests to /api/request)
 
 ---
 
 ## 15. Build Roadmap
 
-### Phase 1 – Core Engine ✅
+### Phase 1 – Core Engine
 
 * Implement Token Bucket in Java
 * Unit test thoroughly
 
-### Phase 2 – Redis Integration ✅
+### Phase 2 – Redis Integration
 
 * Lua scripts
 * Atomic guarantees
 
-### Phase 3 – API Layer ✅
+### Phase 3 – API Layer
 
 * REST endpoint
 * Request interceptors
 
-### Phase 4 – Distributed Concerns ✅
+### Phase 4 – Distributed Concerns
 
 * Multi‑instance testing
 
-### Phase 5 – Advanced Features ✅
+### Phase 5 – Advanced Features
 
 * Hierarchy
 * Dynamic config

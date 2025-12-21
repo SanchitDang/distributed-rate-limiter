@@ -14,10 +14,12 @@ public class RateLimiterMetricsService {
         this.metrics = metrics;
     }
 
-    public Map<String, Long> getMetrics() {
+    public Map<String, Object> getMetrics() {
         return Map.of(
                 "allowed_requests", metrics.allowed.get(),
-                "rejected_requests", metrics.rejected.get()
+                "rejected_requests", metrics.rejected.get(),
+                "redis_latency_avg_ms", metrics.getAverageRedisLatencyMs(),
+                "key_cardinality", metrics.getKeyCardinality()
         );
     }
 }

@@ -16,7 +16,7 @@ public class MetricsController {
     }
 
     @GetMapping("/metrics")
-    public Map<String, Long> getMetrics() {
+    public Map<String, Object> getMetrics() {
         return metricsService.getMetrics();
     }
 }

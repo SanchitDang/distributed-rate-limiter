@@ -58,11 +58,17 @@ public class RedisDynamicRateLimiter implements RateLimiter {
     public boolean allowRequest(List<String> keys) {
 
         metrics.incrementTotalRequests();
+        metrics.recordKeys(keys);
 
         try (Jedis jedis = jedisPool.getResource()) {
             long now = System.currentTimeMillis();
 
+            long start = System.nanoTime();
             Object result = jedis.eval(luaScript, keys, List.of(String.valueOf(now)));
+            long end = System.nanoTime();
+
+            metrics.recordRedisLatency((end - start) / 1_000_000); // latency in ms
+
             boolean allowed = Integer.parseInt(result.toString()) == 1;
 
             if (allowed) {

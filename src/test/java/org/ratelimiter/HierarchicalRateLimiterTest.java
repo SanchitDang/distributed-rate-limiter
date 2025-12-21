@@ -1,4 +1,4 @@
-package org.ratelimiter.api.simulation;
+package org.ratelimiter;
 
 import org.junit.jupiter.api.*;
 import org.ratelimiter.core.RedisDynamicRateLimiter;
@@ -16,7 +16,6 @@ public class HierarchicalRateLimiterTest {
 
     private RedisDynamicRateLimiter rateLimiter;
     private ResolvePolicy policyResolver;
-    private InMemoryRateLimiterMetrics metrics;
     private JedisPool jedisPool;
 
     @BeforeAll
@@ -25,7 +24,7 @@ public class HierarchicalRateLimiterTest {
         jedisPool = new JedisPool("localhost", 6379);
 
         // Metrics collector
-        metrics = new InMemoryRateLimiterMetrics();
+        InMemoryRateLimiterMetrics metrics = new InMemoryRateLimiterMetrics();
 
         // Redis Dynamic Rate Limiter
         rateLimiter = new RedisDynamicRateLimiter(jedisPool, metrics);

@@ -1,5 +1,7 @@
 package org.ratelimiter.metrics;
 
+import java.util.List;
+
 public interface RateLimiterMetrics {
 
     void incrementTotalRequests();
@@ -12,4 +14,10 @@ public interface RateLimiterMetrics {
 
     void incrementLocalHit();
     void incrementRedisHit();
+
+    void recordKeys(List<String> keys);
+    void recordRedisLatency(long latencyMs);
+
+    int getKeyCardinality();
+    double getAverageRedisLatencyMs();
 }
