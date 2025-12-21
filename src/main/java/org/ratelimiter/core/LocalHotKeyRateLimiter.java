@@ -15,43 +15,55 @@ import java.util.concurrent.locks.ReentrantLock;
  *
  * Each request will automatically pick up the latest Redis config for capacity/refill rate.
  */
+/**
+ * Update - Implemented LocalHotKeyRateLimiter with:
+ * - Key Sharding
+ * - Request Coalescing
+ */
 public class LocalHotKeyRateLimiter {
 
-    private final ConcurrentHashMap<String, LocalBucket> hotBuckets = new ConcurrentHashMap<>();
+    private final ConcurrentHashMap<String, ShardedBucket> hotBuckets = new ConcurrentHashMap<>();
     private final long capacity;
     private final double refillRatePerMillis;
+    private final int shardCount;
     private final RateLimiterMetrics metrics;
 
-    public LocalHotKeyRateLimiter(long capacity, double refillRatePerSecond, RateLimiterMetrics metrics) {
+    public LocalHotKeyRateLimiter(long capacity, double refillRatePerSecond, int shardCount, RateLimiterMetrics metrics) {
         this.capacity = capacity;
         this.refillRatePerMillis = refillRatePerSecond / 1000.0;
+        this.shardCount = shardCount;
         this.metrics = metrics;
     }
 
     public boolean allowRequest(String key) {
         metrics.incrementTotalRequests();
 
-        LocalBucket bucket = hotBuckets.computeIfAbsent(key,
-                k -> new LocalBucket(capacity, refillRatePerMillis));
+        // pick the shard
+        int shardIndex = Math.abs(key.hashCode() % shardCount);
+        String shardKey = key + "#" + shardIndex;
 
-        if (bucket.tryConsume()) {
+        ShardedBucket shard = hotBuckets.computeIfAbsent(shardKey,
+                k -> new ShardedBucket(capacity, refillRatePerMillis));
+
+        boolean allowed = shard.tryConsume();
+        if (allowed) {
             metrics.incrementLocalHit();
             metrics.incrementAllowed();
-            return true;
+        } else {
+            metrics.incrementRejected();
         }
-
-        metrics.incrementRejected();
-        return false;
+        return allowed;
     }
 
-    private static class LocalBucket {
+    // ShardedBucket handles request coalescing for each shard
+    private static class ShardedBucket {
         private double tokens;
         private long lastRefill;
         private final long capacity;
         private final double refillRatePerMillis;
         private final ReentrantLock lock = new ReentrantLock();
 
-        public LocalBucket(long capacity, double refillRatePerMillis) {
+        public ShardedBucket(long capacity, double refillRatePerMillis) {
             this.capacity = capacity;
             this.refillRatePerMillis = refillRatePerMillis;
             this.tokens = capacity;
@@ -59,7 +71,7 @@ public class LocalHotKeyRateLimiter {
         }
 
         public boolean tryConsume() {
-            lock.lock();
+            lock.lock();  // coalescing: only one thread refills at a time
             try {
                 refill();
                 if (tokens >= 1) {

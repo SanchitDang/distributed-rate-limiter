@@ -116,7 +116,13 @@ public class RateLimiterTests {
 
         InMemoryRateLimiterMetrics metrics = new InMemoryRateLimiterMetrics();
 
-        LocalHotKeyRateLimiter hotKeyLimiter = new LocalHotKeyRateLimiter(5, 1, metrics);
+        /*
+         * How to choose shardCount
+         * - Low / moderate traffic 1–2
+         * - Hot keys (bursts)	4–8
+         * - Very high QPS	16+
+         */
+        LocalHotKeyRateLimiter hotKeyLimiter = new LocalHotKeyRateLimiter(5, 1, 4, metrics);
         RedisDynamicRateLimiter redisLimiter = new RedisDynamicRateLimiter(jedisPool, metrics);
 
         String user = "concurrent-user";

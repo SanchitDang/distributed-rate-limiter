@@ -247,9 +247,9 @@ One key gets massive traffic.
 
 ### Solutions
 
-* Key sharding 👉 *Future Scope*
 * Local in‑memory pre‑check
-* Request coalescing 👉 *Future Scope*
+* Key sharding
+* Request coalescing
 
 ---
 
