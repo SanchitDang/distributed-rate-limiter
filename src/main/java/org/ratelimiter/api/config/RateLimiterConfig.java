@@ -1,5 +1,6 @@
 package org.ratelimiter.api.config;
 
+import org.ratelimiter.core.LocalHotKeyRateLimiter;
 import org.ratelimiter.core.RedisDynamicRateLimiter;
 import org.ratelimiter.core.RedisFailMode;
 import org.ratelimiter.metrics.InMemoryRateLimiterMetrics;
@@ -10,6 +11,8 @@ import redis.clients.jedis.JedisPoolConfig;
 
 @Configuration
 public class RateLimiterConfig {
+
+    /* ---------------- Redis ---------------- */
 
     @Bean
     public JedisPool jedisPool() {
@@ -28,7 +31,7 @@ public class RateLimiterConfig {
      */
     @Bean
     public RedisFailMode redisFailMode() {
-        return RedisFailMode.FAIL_OPEN; // default safe mode
+        return RedisFailMode.FAIL_OPEN; // safe default
     }
 
     @Bean
@@ -38,5 +41,19 @@ public class RateLimiterConfig {
             RedisFailMode redisFailMode
     ) {
         return new RedisDynamicRateLimiter(jedisPool, metrics, redisFailMode);
+    }
+
+    /* ---------------- Hot-Key Limiter ---------------- */
+
+    @Bean
+    public LocalHotKeyRateLimiter localHotKeyRateLimiter(
+            InMemoryRateLimiterMetrics metrics
+    ) {
+        return new LocalHotKeyRateLimiter(
+                5,  // hot-key capacity
+                1,  // refill rate
+                4,  // shard count
+                metrics
+        );
     }
 }

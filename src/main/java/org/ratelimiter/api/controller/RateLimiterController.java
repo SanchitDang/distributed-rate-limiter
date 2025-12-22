@@ -1,5 +1,6 @@
 package org.ratelimiter.api.controller;
 
+import org.ratelimiter.core.LocalHotKeyRateLimiter;
 import org.ratelimiter.core.RedisDynamicRateLimiter;
 import org.ratelimiter.policy.ResolvePolicy;
 import org.springframework.http.HttpStatus;
@@ -12,14 +13,17 @@ import java.util.List;
 @RequestMapping("/api")
 public class RateLimiterController {
 
-    private final RedisDynamicRateLimiter rateLimiter;
+    private final LocalHotKeyRateLimiter hotKeyLimiter;
+    private final RedisDynamicRateLimiter redisRateLimiter;
     private final ResolvePolicy policyResolver;
 
     public RateLimiterController(
-            RedisDynamicRateLimiter rateLimiter,
+            LocalHotKeyRateLimiter hotKeyLimiter,
+            RedisDynamicRateLimiter redisRateLimiter,
             ResolvePolicy policyResolver
     ) {
-        this.rateLimiter = rateLimiter;
+        this.hotKeyLimiter = hotKeyLimiter;
+        this.redisRateLimiter = redisRateLimiter;
         this.policyResolver = policyResolver;
     }
 
@@ -30,14 +34,20 @@ public class RateLimiterController {
             @RequestParam String org
     ) {
 
+        // 1 Hot-key fast path (local memory)
+        if (hotKeyLimiter.allowRequest(user)) {
+            return ResponseEntity.ok("Request allowed (local hot-key) ✅");
+        }
+
+        // 2 Redis authoritative path (hierarchical + dynamic)
         List<String> keys = policyResolver.resolveKeys(user, ip, org);
-        boolean allowed = rateLimiter.allowRequest(keys);
+        boolean allowed = redisRateLimiter.allowRequest(keys);
 
         if (allowed) {
-            return ResponseEntity.ok("Request allowed ✅");
-        } else {
-            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
-                    .body("Rate limit exceeded ❌");
+            return ResponseEntity.ok("Request allowed (redis) ✅");
         }
+
+        return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                .body("Rate limit exceeded ❌");
     }
 }
