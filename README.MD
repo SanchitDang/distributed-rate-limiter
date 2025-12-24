@@ -337,3 +337,26 @@ Expose `/metrics` endpoint.
 * Metrics
 
 ---
+
+# Enhancements
+
+## 16. Prometheus & Grafana Integration
+
+Exposes Prometheus metrics for allowed/rejected requests, hot keys, and Redis performance.
+Grafana dashboards provide real-time visibility into rate-limiting behavior and system health.
+**Access Grafana:** `http://localhost:3000` (default username/password: `admin/admin`)
+
+---
+
+## 17. Docker Setup (One-Click)
+
+Docker Compose setup to run the rate limiter, Redis, Prometheus, and Grafana together.
+Quick local setup and consistent environments across machines.
+
+### Run & Build
+
+```bash
+docker-compose up --build
+```
+
+---
