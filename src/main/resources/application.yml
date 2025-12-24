@@ -1,0 +1,6 @@
+spring:
+  profiles:
+    default: localhost
+
+server:
+  port: 8080

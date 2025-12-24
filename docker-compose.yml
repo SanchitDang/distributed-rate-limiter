@@ -1,6 +1,22 @@
 version: "3.8"
 
 services:
+  redis:
+    image: redis:7
+    container_name: redis
+    ports:
+      - "6379:6379"
+
+  ratelimiter-api:
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+    build: .
+    container_name: ratelimiter-api
+    ports:
+      - "8080:8080"
+    depends_on:
+      - redis
+
   prometheus:
     image: prom/prometheus
     container_name: prometheus
@@ -8,6 +24,8 @@ services:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml
     ports:
       - "9090:9090"
+    depends_on:
+      - ratelimiter-api
 
   grafana:
     image: grafana/grafana

@@ -4,6 +4,7 @@ import org.ratelimiter.core.LocalHotKeyRateLimiter;
 import org.ratelimiter.core.RedisDynamicRateLimiter;
 import org.ratelimiter.core.RedisFailMode;
 import org.ratelimiter.metrics.InMemoryRateLimiterMetrics;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import redis.clients.jedis.JedisPool;
@@ -14,15 +15,17 @@ public class RateLimiterConfig {
 
     /* ---------------- Redis ---------------- */
 
+    @Value("${redis.host}")
+    private String redisHost;
+
+    @Value("${redis.port}")
+    private int redisPort;
+
     @Bean
     public JedisPool jedisPool() {
         JedisPoolConfig poolConfig = new JedisPoolConfig();
-
-        // Disable Commons Pool JMX
         poolConfig.setJmxEnabled(false);
-
-        // Host + Port + Timeout (ms)
-        return new JedisPool(poolConfig, "localhost", 6379, 2000);
+        return new JedisPool(poolConfig, redisHost, redisPort, 2000);
     }
 
     /**
