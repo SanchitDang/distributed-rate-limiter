@@ -34,12 +34,14 @@ public class RateLimiterController {
             @RequestParam String org
     ) {
 
-        // 1 Hot-key fast path (local memory)
-        if (hotKeyLimiter.allowRequest(user)) {
-            return ResponseEntity.ok("Request allowed (local hot-key) ✅");
+        // Local hot-key pre-filter: sheds load on a known-hot key before it hits Redis.
+        // Only ever short-circuits a reject, never an allow - Redis stays the source of truth.
+        if (!hotKeyLimiter.allowRequest(user)) {
+            return ResponseEntity.status(HttpStatus.TOO_MANY_REQUESTS)
+                    .body("Rate limit exceeded (hot-key) ❌");
         }
 
-        // 2 Redis authoritative path (hierarchical + dynamic)
+        // Redis authoritative path (hierarchical + dynamic)
         List<String> keys = policyResolver.resolveKeys(user, ip, org);
         boolean allowed = redisRateLimiter.allowRequest(keys);
 

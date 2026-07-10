@@ -6,19 +6,9 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
- * Step 6: RedisDynamicRateLimiter
- *
- * Implements a distributed, hierarchical token bucket with:
- *  - Dynamic configuration for capacity and refill_rate per key
- *  - Multi-key hierarchical support (IP -> User -> Org)
- *  - Atomic refill and consume via Lua script
- *
- * Each request will automatically pick up the latest Redis config for capacity/refill rate.
- */
-/**
- * Update - Implemented LocalHotKeyRateLimiter with:
- * - Key Sharding
- * - Request Coalescing
+ * Local, per-JVM pre-filter for hot keys. Sheds load on a key that's clearly
+ * over budget on this node before it reaches Redis - it never grants an
+ * allowance on its own, Redis is still the authoritative check.
  */
 public class LocalHotKeyRateLimiter {
 
@@ -36,8 +26,6 @@ public class LocalHotKeyRateLimiter {
     }
 
     public boolean allowRequest(String key) {
-        metrics.incrementTotalRequests();
-
         // pick the shard
         int shardIndex = Math.abs(key.hashCode() % shardCount);
         String shardKey = key + "#" + shardIndex;
@@ -47,9 +35,12 @@ public class LocalHotKeyRateLimiter {
 
         boolean allowed = shard.tryConsume();
         if (allowed) {
+            // request still goes on to Redis - don't count it here, Redis owns
+            // total/allowed/rejected for anything it actually decides on
             metrics.incrementLocalHit();
-            metrics.incrementAllowed();
         } else {
+            // shed here, request never reaches Redis - this is the terminal outcome
+            metrics.incrementTotalRequests();
             metrics.incrementRejected();
         }
         return allowed;
