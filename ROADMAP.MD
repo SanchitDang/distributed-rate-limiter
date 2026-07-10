@@ -219,6 +219,42 @@ Can detect abuse / scaling issues
 
 ---
 
+## **Step 10: Bug Fixes & Hardening Pass**
+
+**Goal:**
+A few of the earlier steps didn't quite work as described once looked at closely
+- fix those gaps so the implementation actually matches this roadmap.
+
+**What we found & fixed:**
+
+* The hot-key local limiter (Step 7) was short-circuiting straight past the
+  Redis check on every allow, not just shedding load - fixed so it can only
+  ever short-circuit a reject, Redis stays authoritative
+* Its "sharding" always hashed a key to the same shard, so it never actually
+  spread load - shard selection is now random per request
+* The hierarchical limiter (Step 5) used one shared capacity/refill for every
+  level and was never actually wired into the running app - it now reads
+  per-level config from Redis (same as Step 6's dynamic config) and is the
+  live path; it also reports which level blocked a request, wired to metrics
+* Lua's `now` came from each app node's own clock, which meant clock drift
+  between instances could corrupt refill math - it now reads Redis's own
+  `TIME` instead, so there's a single source of truth regardless of which
+  node made the call
+* Redis failures and missing per-key config were silently swallowed - both
+  are now logged
+* Dynamic config (Step 6) had no write path - added `POST /admin/config`
+* `pom.xml` was missing the JUnit 5 engine/launcher, so `mvn test` likely
+  wasn't running anything - fixed, plus added tests for the gaps above
+* Light Docker hardening: Redis now requires a password, Prometheus/Grafana
+  persist across restarts, Grafana admin password is overridable
+* Removed a dead duplicate policy-resolver implementation that was never used
+
+**Result:**
+Hierarchical limiting, hot-key mitigation, and dynamic config now work the
+way the earlier steps describe, instead of just partially.
+
+---
+
 ### Summary
 
 | Step | Focus                        | Outcome                         | Key Tech / Concept                    |
@@ -232,6 +268,7 @@ Can detect abuse / scaling issues
 | 7    | Hot key mitigation           | Prevent Redis overload          | Caching, sharding                     |
 | 8    | Testing & validation         | Ensure correctness              | Multi-thread tests, distributed tests |
 | 9    | Metrics & observability      | Monitor system                  | Prometheus, Grafana                   |
+| 10   | Bug fixes & hardening        | Matches what steps 5-9 describe | Redis clock, real sharding, junit fix |
 
 ---
 
