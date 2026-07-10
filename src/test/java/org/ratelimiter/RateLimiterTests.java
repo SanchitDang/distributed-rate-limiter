@@ -81,7 +81,8 @@ public class RateLimiterTests {
     void testRedisHierarchical() throws InterruptedException {
         int capacity = 10;
         int refillRate = 5;
-        RedisHierarchicalRateLimiter limiter = new RedisHierarchicalRateLimiter(jedisPool, RedisFailMode.FAIL_CLOSED);
+        RedisHierarchicalRateLimiter limiter = new RedisHierarchicalRateLimiter(
+                jedisPool, new InMemoryRateLimiterMetrics(), RedisFailMode.FAIL_CLOSED);
 
         String user = "concurrent-user";
         String ip = "192.168.0.1";

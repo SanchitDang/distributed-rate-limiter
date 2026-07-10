@@ -40,9 +40,10 @@ public class RateLimiterConfig {
     @Bean
     public RedisHierarchicalRateLimiter redisHierarchicalRateLimiter(
             JedisPool jedisPool,
+            InMemoryRateLimiterMetrics metrics,
             RedisFailMode redisFailMode
     ) {
-        return new RedisHierarchicalRateLimiter(jedisPool, redisFailMode);
+        return new RedisHierarchicalRateLimiter(jedisPool, metrics, redisFailMode);
     }
 
     /* ---------------- Hot-Key Limiter ---------------- */
