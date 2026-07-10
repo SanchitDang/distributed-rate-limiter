@@ -82,7 +82,9 @@ public class RedisHierarchicalRateLimiterTest {
 
         String key = "rate_limit:user:clock-" + System.nanoTime();
         try (var jedis = jedisPool.getResource()) {
-            jedis.hset(key + ":config", Map.of("capacity", "3", "refill_rate", "1000")); // 1 token/ms
+            // no refill yet - keeps exhaustion deterministic regardless of how
+            // long the round trips to Redis themselves take
+            jedis.hset(key + ":config", Map.of("capacity", "3", "refill_rate", "0"));
         }
 
         assertTrue(limiter.allowRequest(List.of(key)).allowed());
@@ -95,6 +97,10 @@ public class RedisHierarchicalRateLimiterTest {
             long nowMs = System.currentTimeMillis();
             assertTrue(Math.abs(nowMs - lastRefill) < 5000,
                     "last_refill should track Redis's real clock, not be off by a unit-conversion bug in the TIME() math");
+
+            // now switch on a fast refill rate right before waiting, so the
+            // refill-after-wait check below isn't at the mercy of round-trip timing
+            jedis.hset(key + ":config", Map.of("capacity", "3", "refill_rate", "1000")); // 1 token/ms
         }
 
         Thread.sleep(20); // plenty of real time for a 1 token/ms refill rate

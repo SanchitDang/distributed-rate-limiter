@@ -38,8 +38,8 @@ public class AdminConfigController {
         if (!VALID_SCOPES.contains(scope)) {
             return ResponseEntity.badRequest().body("scope must be one of " + VALID_SCOPES);
         }
-        if (id.isBlank() || capacity <= 0 || refillRate <= 0) {
-            return ResponseEntity.badRequest().body("id must be non-blank, capacity/refillRate must be positive");
+        if (id.isBlank() || capacity <= 0 || refillRate < 0) {
+            return ResponseEntity.badRequest().body("id must be non-blank, capacity must be positive, refillRate must not be negative");
         }
 
         String configKey = "rate_limit:" + scope + ":" + id + ":config";
