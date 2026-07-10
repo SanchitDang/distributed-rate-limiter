@@ -21,10 +21,16 @@ public class RateLimiterConfig {
     @Value("${redis.port}")
     private int redisPort;
 
+    @Value("${redis.password:}")
+    private String redisPassword;
+
     @Bean
     public JedisPool jedisPool() {
         JedisPoolConfig poolConfig = new JedisPoolConfig();
         poolConfig.setJmxEnabled(false);
+        if (redisPassword != null && !redisPassword.isBlank()) {
+            return new JedisPool(poolConfig, redisHost, redisPort, 2000, redisPassword);
+        }
         return new JedisPool(poolConfig, redisHost, redisPort, 2000);
     }
 

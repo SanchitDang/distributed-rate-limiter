@@ -1,6 +1,6 @@
 spring:
   profiles:
-    default: localhost
+    default: local
 
 server:
   port: 8080
