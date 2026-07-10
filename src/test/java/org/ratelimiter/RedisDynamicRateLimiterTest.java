@@ -53,6 +53,9 @@ public class RedisDynamicRateLimiterTest {
         String userKey = "rate_limit:user:test-user";
 
         try (var jedis = jedisPool.getResource()) {
+            // reset leftover bucket state so this doesn't depend on the 60s Redis TTL
+            jedis.del(userKey);
+
             Map<String, String> config = new HashMap<>();
             config.put("capacity", "10");
             config.put("refill_rate", "5");
@@ -95,6 +98,9 @@ public class RedisDynamicRateLimiterTest {
 
         // Setup tight limit to force failure
         try (var jedis = jedisPool.getResource()) {
+            // reset leftover bucket state so this doesn't depend on the 60s Redis TTL
+            jedis.del("rate_limit:ip:1.1.1.1", "rate_limit:user:test", "rate_limit:org:test-org");
+
             jedis.hset("rate_limit:user:test:config",
                     Map.of("capacity", "2", "refill_rate", "0"));
         }

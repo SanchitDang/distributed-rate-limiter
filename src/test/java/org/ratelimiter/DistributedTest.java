@@ -8,6 +8,9 @@ import redis.clients.jedis.JedisPool;
 import java.util.List;
 import java.util.Map;
 
+// Manual script, not a JUnit test - run it directly from the IDE, or
+// `java -cp target/classes:target/test-classes org.ratelimiter.DistributedTest`
+// (start it from a couple of terminals at once to see cross-process behavior).
 public class DistributedTest {
 
     public static void main(String[] args) {

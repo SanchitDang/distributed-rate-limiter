@@ -48,6 +48,9 @@ public class LoadTests {
         String userKey = "rate_limit:user:burst-user";
 
         try (var jedis = jedisPool.getResource()) {
+            // reset leftover bucket state so this doesn't depend on the 60s Redis TTL
+            jedis.del(userKey);
+
             Map<String, String> config = new HashMap<>();
             config.put("capacity", "50");
             config.put("refill_rate", "20");
@@ -94,6 +97,9 @@ public class LoadTests {
         String orgKey = "rate_limit:org:burst-org";
 
         try (var jedis = jedisPool.getResource()) {
+            // reset leftover bucket state so this doesn't depend on the 60s Redis TTL
+            jedis.del(ipKey, userKey, orgKey);
+
             jedis.hset(ipKey + ":config", Map.of("capacity", "20", "refill_rate", "10"));
             jedis.hset(userKey + ":config", Map.of("capacity", "30", "refill_rate", "15"));
             jedis.hset(orgKey + ":config", Map.of("capacity", "50", "refill_rate", "20"));

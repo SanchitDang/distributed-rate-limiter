@@ -59,6 +59,11 @@ public class RateLimiterTests {
         int refillRate = 5;
         RedisTokenBucketRateLimiter limiter = new RedisTokenBucketRateLimiter(jedisPool, capacity, refillRate);
 
+        // reset leftover bucket state so this doesn't depend on the 60s Redis TTL
+        try (var jedis = jedisPool.getResource()) {
+            jedis.del("rate_limit:user:user1");
+        }
+
         int totalRequests = 15; // same reasoning
         AtomicInteger allowedCount = new AtomicInteger();
         ExecutorService executor = Executors.newFixedThreadPool(5);
@@ -90,6 +95,9 @@ public class RateLimiterTests {
 
         // same capacity/refill on every level here - just checking the fail-fast/decrement math
         try (var jedis = jedisPool.getResource()) {
+            // reset leftover bucket state so this doesn't depend on the 60s Redis TTL
+            jedis.del("rate_limit:ip:" + ip, "rate_limit:user:" + user, "rate_limit:org:" + org);
+
             jedis.hset("rate_limit:ip:" + ip + ":config", Map.of("capacity", String.valueOf(capacity), "refill_rate", String.valueOf(refillRate)));
             jedis.hset("rate_limit:user:" + user + ":config", Map.of("capacity", String.valueOf(capacity), "refill_rate", String.valueOf(refillRate)));
             jedis.hset("rate_limit:org:" + org + ":config", Map.of("capacity", String.valueOf(capacity), "refill_rate", String.valueOf(refillRate)));
@@ -139,6 +147,9 @@ public class RateLimiterTests {
 
         // Redis dynamic config
         try (var jedis = jedisPool.getResource()) {
+            // reset leftover bucket state so this doesn't depend on the 60s Redis TTL
+            jedis.del("rate_limit:ip:" + ip, "rate_limit:user:" + user, "rate_limit:org:" + org);
+
             jedis.hset("rate_limit:user:" + user + ":config", Map.of("capacity", "10", "refill_rate", "0"));
             jedis.hset("rate_limit:ip:" + ip + ":config", Map.of("capacity", "20", "refill_rate", "0"));
             jedis.hset("rate_limit:org:" + org + ":config", Map.of("capacity", "50", "refill_rate", "0"));

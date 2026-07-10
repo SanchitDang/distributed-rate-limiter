@@ -30,6 +30,9 @@ public class ConcurrentRateLimiterTest {
 
         // Preload configs
         try (var jedis = jedisPool.getResource()) {
+            // reset leftover bucket state so this doesn't depend on the 60s Redis TTL
+            jedis.del("rate_limit:user:concurrent-user", "rate_limit:ip:192.168.0.1", "rate_limit:org:orgABC");
+
             jedis.hset("rate_limit:user:concurrent-user:config", "capacity", "10");
             jedis.hset("rate_limit:user:concurrent-user:config", "refill_rate", "5");
 

@@ -6,6 +6,9 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+// Manual script, not a JUnit test - the app needs to already be running on
+// localhost:8080. Run it directly from the IDE, or
+// `java -cp target/classes:target/test-classes org.ratelimiter.api.simulation.RateLimiterLoadTest`
 public class RateLimiterLoadTest {
 
     public static void main(String[] args) throws InterruptedException {
