@@ -182,7 +182,8 @@ public class RateLimiterTests {
         System.out.println("Local Hits: " + metrics.localHits.get());
         System.out.println("Redis Hits: " + metrics.redisHits.get());
 
-        int hotKeyCapacity = 5;
+        int hotKeyShardCount = 4;
+        int hotKeyCapacity = 5 * hotKeyShardCount; // shards pick randomly, so the local budget is spread across all of them
         int redisCapacity = 10; // min(user=10, ip=20, org=50)
         int maxAllowed = hotKeyCapacity + redisCapacity;
 

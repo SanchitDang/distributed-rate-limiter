@@ -34,7 +34,8 @@ public class RedisHierarchicalRateLimiter implements RateLimiter {
         // Lua script for atomic refill + check + decrement across multiple keys.
         // Stops at the first key that's out of tokens (fail-fast) and reports its index.
         this.luaScript = """
-            local now = tonumber(ARGV[1])
+            local time = redis.call("TIME")
+            local now = tonumber(time[1]) * 1000 + math.floor(tonumber(time[2]) / 1000)
             local allowed = 1
             local blockedIndex = 0
             local buckets = {}
@@ -81,9 +82,7 @@ public class RedisHierarchicalRateLimiter implements RateLimiter {
      */
     public Result allowRequest(List<String> keys) {
         try (Jedis jedis = jedisPool.getResource()) {
-            long now = System.currentTimeMillis();
-
-            Object raw = jedis.eval(luaScript, keys, List.of(String.valueOf(now)));
+            Object raw = jedis.eval(luaScript, keys, List.of());
             List<?> result = (List<?>) raw;
 
             boolean allowed = Long.parseLong(result.get(0).toString()) == 1;

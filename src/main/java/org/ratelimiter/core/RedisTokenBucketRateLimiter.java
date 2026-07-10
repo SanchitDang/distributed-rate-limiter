@@ -33,7 +33,8 @@ public class RedisTokenBucketRateLimiter implements RateLimiter {
             local key = KEYS[1]
             local capacity = tonumber(ARGV[1])
             local refill_rate_per_ms = tonumber(ARGV[2])
-            local now = tonumber(ARGV[3])
+            local time = redis.call("TIME")
+            local now = tonumber(time[1]) * 1000 + math.floor(tonumber(time[2]) / 1000)
             local tokens = tonumber(redis.call("HGET", key, "tokens") or capacity)
             local last_refill = tonumber(redis.call("HGET", key, "last_refill") or now)
             local elapsed = now - last_refill
@@ -52,13 +53,11 @@ public class RedisTokenBucketRateLimiter implements RateLimiter {
     @Override
     public boolean allowRequest(String key) {
         try (Jedis jedis = jedisPool.getResource()) {
-            long now = System.currentTimeMillis();
-
             Object result = jedis.eval(
                     luaScript,
                     Collections.singletonList("rate_limit:user:" + key),
-                    // ARGV[1] = capacity, ARGV[2] = refillRatePerMillis, ARGV[3] = now_ms
-                    Arrays.asList(String.valueOf(capacity), String.valueOf(refillRatePerMillis), String.valueOf(now))
+                    // ARGV[1] = capacity, ARGV[2] = refillRatePerMillis - now comes from Redis's own clock
+                    Arrays.asList(String.valueOf(capacity), String.valueOf(refillRatePerMillis))
             );
 
             return Integer.valueOf(result.toString()) == 1;

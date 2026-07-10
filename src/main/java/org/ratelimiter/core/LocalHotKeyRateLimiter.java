@@ -3,6 +3,7 @@ package org.ratelimiter.core;
 import org.ratelimiter.metrics.RateLimiterMetrics;
 
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.locks.ReentrantLock;
 
 /**
@@ -26,8 +27,11 @@ public class LocalHotKeyRateLimiter {
     }
 
     public boolean allowRequest(String key) {
-        // pick the shard
-        int shardIndex = Math.abs(key.hashCode() % shardCount);
+        // Random shard per request, not derived from the key - otherwise every
+        // request for the same key always lands on the same bucket and sharding
+        // buys nothing. Spreads a hot key's load across shardCount buckets, at
+        // the cost of the local budget effectively becoming shardCount x capacity.
+        int shardIndex = ThreadLocalRandom.current().nextInt(shardCount);
         String shardKey = key + "#" + shardIndex;
 
         ShardedBucket shard = hotBuckets.computeIfAbsent(shardKey,

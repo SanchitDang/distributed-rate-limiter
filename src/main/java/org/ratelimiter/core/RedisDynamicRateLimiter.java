@@ -31,7 +31,8 @@ public class RedisDynamicRateLimiter implements RateLimiter {
         this.failMode = failMode;
 
         this.luaScript = """
-            local now = tonumber(ARGV[1])
+            local time = redis.call("TIME")
+            local now = tonumber(time[1]) * 1000 + math.floor(tonumber(time[2]) / 1000)
             local allowed = 1
             local buckets = {}
             for i, key in ipairs(KEYS) do
@@ -72,10 +73,9 @@ public class RedisDynamicRateLimiter implements RateLimiter {
 
         try (Jedis jedis = jedisPool.getResource()) {
 
-            long now = System.currentTimeMillis();
             long start = System.nanoTime();
 
-            Object result = jedis.eval(luaScript, keys, List.of(String.valueOf(now)));
+            Object result = jedis.eval(luaScript, keys, List.of());
 
             long end = System.nanoTime();
             metrics.recordRedisLatency((end - start) / 1_000_000);
