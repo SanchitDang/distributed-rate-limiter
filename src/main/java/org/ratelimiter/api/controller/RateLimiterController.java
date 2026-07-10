@@ -1,7 +1,7 @@
 package org.ratelimiter.api.controller;
 
 import org.ratelimiter.core.LocalHotKeyRateLimiter;
-import org.ratelimiter.core.RedisDynamicRateLimiter;
+import org.ratelimiter.core.RedisHierarchicalRateLimiter;
 import org.ratelimiter.policy.ResolvePolicy;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,12 +14,12 @@ import java.util.List;
 public class RateLimiterController {
 
     private final LocalHotKeyRateLimiter hotKeyLimiter;
-    private final RedisDynamicRateLimiter redisRateLimiter;
+    private final RedisHierarchicalRateLimiter redisRateLimiter;
     private final ResolvePolicy policyResolver;
 
     public RateLimiterController(
             LocalHotKeyRateLimiter hotKeyLimiter,
-            RedisDynamicRateLimiter redisRateLimiter,
+            RedisHierarchicalRateLimiter redisRateLimiter,
             ResolvePolicy policyResolver
     ) {
         this.hotKeyLimiter = hotKeyLimiter;
@@ -43,7 +43,7 @@ public class RateLimiterController {
 
         // Redis authoritative path (hierarchical + dynamic)
         List<String> keys = policyResolver.resolveKeys(user, ip, org);
-        boolean allowed = redisRateLimiter.allowRequest(keys);
+        boolean allowed = redisRateLimiter.allowRequest(keys).allowed();
 
         if (allowed) {
             return ResponseEntity.ok("Request allowed (redis) ✅");

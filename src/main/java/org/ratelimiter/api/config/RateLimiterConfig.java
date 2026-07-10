@@ -1,8 +1,8 @@
 package org.ratelimiter.api.config;
 
 import org.ratelimiter.core.LocalHotKeyRateLimiter;
-import org.ratelimiter.core.RedisDynamicRateLimiter;
 import org.ratelimiter.core.RedisFailMode;
+import org.ratelimiter.core.RedisHierarchicalRateLimiter;
 import org.ratelimiter.metrics.InMemoryRateLimiterMetrics;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
@@ -38,12 +38,11 @@ public class RateLimiterConfig {
     }
 
     @Bean
-    public RedisDynamicRateLimiter redisDynamicRateLimiter(
+    public RedisHierarchicalRateLimiter redisHierarchicalRateLimiter(
             JedisPool jedisPool,
-            InMemoryRateLimiterMetrics metrics,
             RedisFailMode redisFailMode
     ) {
-        return new RedisDynamicRateLimiter(jedisPool, metrics, redisFailMode);
+        return new RedisHierarchicalRateLimiter(jedisPool, redisFailMode);
     }
 
     /* ---------------- Hot-Key Limiter ---------------- */

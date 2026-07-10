@@ -10,39 +10,46 @@ import java.util.List;
  * Distributed hierarchical token bucket using Redis + Lua script
  * Step 5: Multi-level rate limiting (IP -> User -> Org)
  *
+ * Each key in the hierarchy carries its own capacity/refill_rate, read from
+ * a "<key>:config" hash (same convention RedisDynamicRateLimiter uses), so
+ * an org can have a bigger budget than a user, which can have a bigger
+ * budget than a single IP.
+ *
  * DSA / Concepts:
  * - Redis hash for bucket state
  * - Lua script for atomic operations across multiple keys
- * - Sliding window refill logic
- * - Fail-fast hierarchical check
+ * - Fail-fast hierarchical check, reports which level blocked the request
  * - Distributed consistency across JVMs
  */
 public class RedisHierarchicalRateLimiter implements RateLimiter {
 
     private final JedisPool jedisPool;
-    private final long capacity;
-    private final double refillRatePerMillis;
+    private final RedisFailMode failMode;
     private final String luaScript;
 
-    public RedisHierarchicalRateLimiter(JedisPool jedisPool, long capacity, double refillRatePerSecond) {
+    public RedisHierarchicalRateLimiter(JedisPool jedisPool, RedisFailMode failMode) {
         this.jedisPool = jedisPool;
-        this.capacity = capacity;
-        this.refillRatePerMillis = refillRatePerSecond / 1000.0;
+        this.failMode = failMode;
 
-        // Lua script for atomic refill + check + decrement across multiple keys
+        // Lua script for atomic refill + check + decrement across multiple keys.
+        // Stops at the first key that's out of tokens (fail-fast) and reports its index.
         this.luaScript = """
-            local capacity = tonumber(ARGV[1])
-            local refill_rate_per_ms = tonumber(ARGV[2])
-            local now = tonumber(ARGV[3])
+            local now = tonumber(ARGV[1])
             local allowed = 1
+            local blockedIndex = 0
             local buckets = {}
             for i, key in ipairs(KEYS) do
+                local configKey = key .. ":config"
+                local capacity = tonumber(redis.call("HGET", configKey, "capacity") or 10)
+                local refill_rate = tonumber(redis.call("HGET", configKey, "refill_rate") or 5)
+                local refill_rate_per_ms = refill_rate / 1000.0
                 local tokens = tonumber(redis.call("HGET", key, "tokens") or capacity)
                 local last_refill = tonumber(redis.call("HGET", key, "last_refill") or now)
                 local elapsed = now - last_refill
                 tokens = math.min(capacity, tokens + elapsed * refill_rate_per_ms)
                 if tokens < 1 then
                     allowed = 0
+                    blockedIndex = i
                     break
                 end
                 buckets[i] = tokens
@@ -54,39 +61,42 @@ public class RedisHierarchicalRateLimiter implements RateLimiter {
                     redis.call("PEXPIRE", key, 60000)
                 end
             end
-            return allowed
+            return {allowed, blockedIndex}
         """;
     }
 
     /**
      * Single-key method required by RateLimiter interface
-     * Converts the single key to a list internally
      */
     @Override
     public boolean allowRequest(String key) {
-        // Treat single key as a list of size 1
-        return allowRequest(Arrays.asList(key));
+        return allowRequest(Arrays.asList(key)).allowed();
     }
 
     /**
-     * Multi-key hierarchical rate limiting
+     * Multi-key hierarchical rate limiting.
      *
-     * @param keys list of Redis keys (IP, User, Org)
-     * @return true if request allowed across all keys, false if any key exceeds limit
+     * @param keys ordered Redis keys, e.g. [ip, user, org]
+     * @return result telling whether the request passed, and if not, which key blocked it
      */
-    public boolean allowRequest(List<String> keys) {
+    public Result allowRequest(List<String> keys) {
         try (Jedis jedis = jedisPool.getResource()) {
             long now = System.currentTimeMillis();
 
-            Object result = jedis.eval(luaScript, keys,
-                    Arrays.asList(
-                            String.valueOf(capacity),
-                            String.valueOf(refillRatePerMillis),
-                            String.valueOf(now)
-                    )
-            );
+            Object raw = jedis.eval(luaScript, keys, List.of(String.valueOf(now)));
+            List<?> result = (List<?>) raw;
 
-            return Integer.parseInt(result.toString()) == 1;
+            boolean allowed = Long.parseLong(result.get(0).toString()) == 1;
+            int blockedIndex = Integer.parseInt(result.get(1).toString());
+            String blockedKey = blockedIndex > 0 ? keys.get(blockedIndex - 1) : null;
+
+            return new Result(allowed, blockedKey);
+
+        } catch (Exception e) {
+            return new Result(failMode == RedisFailMode.FAIL_OPEN, null);
         }
+    }
+
+    public record Result(boolean allowed, String blockedKey) {
     }
 }

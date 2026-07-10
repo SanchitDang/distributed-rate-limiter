@@ -81,15 +81,22 @@ public class RateLimiterTests {
     void testRedisHierarchical() throws InterruptedException {
         int capacity = 10;
         int refillRate = 5;
-        RedisHierarchicalRateLimiter limiter = new RedisHierarchicalRateLimiter(jedisPool, capacity, refillRate);
-
-        int totalRequests = 12; // test more than capacity to trigger rejection
-        AtomicInteger allowedCount = new AtomicInteger();
-        ExecutorService executor = Executors.newFixedThreadPool(5);
+        RedisHierarchicalRateLimiter limiter = new RedisHierarchicalRateLimiter(jedisPool, RedisFailMode.FAIL_CLOSED);
 
         String user = "concurrent-user";
         String ip = "192.168.0.1";
         String org = "orgABC";
+
+        // same capacity/refill on every level here - just checking the fail-fast/decrement math
+        try (var jedis = jedisPool.getResource()) {
+            jedis.hset("rate_limit:ip:" + ip + ":config", Map.of("capacity", String.valueOf(capacity), "refill_rate", String.valueOf(refillRate)));
+            jedis.hset("rate_limit:user:" + user + ":config", Map.of("capacity", String.valueOf(capacity), "refill_rate", String.valueOf(refillRate)));
+            jedis.hset("rate_limit:org:" + org + ":config", Map.of("capacity", String.valueOf(capacity), "refill_rate", String.valueOf(refillRate)));
+        }
+
+        int totalRequests = 12; // test more than capacity to trigger rejection
+        AtomicInteger allowedCount = new AtomicInteger();
+        ExecutorService executor = Executors.newFixedThreadPool(5);
 
         for (int i = 0; i < totalRequests; i++) {
             executor.submit(() -> {
@@ -98,7 +105,7 @@ public class RateLimiterTests {
                                 "rate_limit:ip:" + ip,
                                 "rate_limit:user:" + user,
                                 "rate_limit:org:" + org
-                        ))) allowedCount.incrementAndGet();
+                        )).allowed()) allowedCount.incrementAndGet();
             });
         }
 
